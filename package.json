@@ -4,11 +4,11 @@
   "type": "module",
   "license": "MIT",
   "scripts": {
-    "dev": "tsx watch --env-file=.env server/index.ts",
+    "dev": "tsx watch server/index.ts",
     "build": "tsx script/build.ts",
     "start": "NODE_ENV=production node dist/index.cjs",
     "check": "tsc",
-    "db:push": "tsx --env-file=.env node_modules/drizzle-kit/bin.cjs push",
+    "db:push": "tsx node_modules/drizzle-kit/bin.cjs push",
     "telegram:session": "tsx script/telegram-session.ts"
   },
   "dependencies": {
