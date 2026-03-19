@@ -1,0 +1,52 @@
+# ─── Astral — Netlify Deployment Config ───────────────────────────────────────
+# Frontend (React/Vite) → Netlify CDN
+# Backend (Express) → Netlify Functions via serverless-http
+# GDELT cron → Netlify Scheduled Function (every 15 min)
+#
+# Required environment variables in Netlify dashboard:
+#   DATABASE_URL   — postgresql://postgres:...@mainline.proxy.rlwy.net:21714/railway
+#   NODE_ENV       — production
+
+[build]
+  command   = "npm install && npm run build"
+  publish   = "dist/public"
+  functions = "netlify/functions"
+
+[functions]
+  node_bundler   = "esbuild"
+
+[functions."api"]
+  timeout = 30
+
+[functions."gdelt-cron"]
+  timeout = 60
+
+[build.environment]
+  NODE_VERSION = "20"
+  SECRETS_SCAN_OMIT_KEYS = "NODE_ENV,PORT"
+
+# ─── Dev proxy (netlify dev) ──────────────────────────────────────────────────
+[dev]
+  command   = "npm run dev"
+  port      = 5000
+  targetPort = 5000
+
+# ─── Redirect /api/* → serverless function ────────────────────────────────────
+[[redirects]]
+  from   = "/api/*"
+  to     = "/.netlify/functions/api/:splat"
+  status = 200
+
+# ─── SPA fallback (React Router) ─────────────────────────────────────────────
+[[redirects]]
+  from   = "/*"
+  to     = "/index.html"
+  status = 200
+
+# ─── Security headers ─────────────────────────────────────────────────────────
+[[headers]]
+  for = "/*"
+  [headers.values]
+    X-Frame-Options        = "DENY"
+    X-Content-Type-Options = "nosniff"
+    Referrer-Policy        = "strict-origin-when-cross-origin"
