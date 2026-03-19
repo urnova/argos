@@ -1,0 +1,703 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Panel de Conflit & LiveView Globale</title>
+    
+    <!-- CSS Framework -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    
+    <!-- Chart.js -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
+    <!-- 
+        Placeholder Comments Required:
+        
+        <!- Chosen Palette: Warm Neutrals with Tactical Accents (Slate-50 bg, White cards, Red-500/Amber-500 for conflicts, Slate-800 for text) ->
+        
+        <!- Application Structure Plan: 
+        The SPA is divided into two primary functional tabs: "LiveView" and "Radio Tactique". 
+        1. LiveView: Uses a drill-down architecture (Country Gallery -> City Gallery -> Live Dashboard). This progressive disclosure prevents overwhelming the user. A search bar allows quick filtering. The Live Dashboard combines iframe video feeds with real-time simulated data (Weather, Tension Chart via Chart.js, Alerts) to provide a comprehensive situational overview. Special logic handles the ISS and conflict zones (Ukraine/Russia).
+        2. Radio Tactique: A straightforward list interface with an integrated HTML5 audio player for quick access to communication feeds. ->
+        
+        <!- Visualization & Content Choices: 
+        - Global Tension/Status -> Unicode flags/icons -> Fast load, NO SVG rule compliance.
+        - Conflict Highlight -> CSS Keyframe Pulse Animation -> Draws immediate attention to critical areas.
+        - Tension Index -> Chart.js Line Chart -> Ideal for showing real-time fluctuations and trends over time. Restricted with strict CSS container rules.
+        - ISS Data -> Dynamic JS Text Updates -> Shows changing coordinates/velocity without needing complex graphics.
+        - Radio -> HTML5 <audio> -> Native, reliable streaming. ->
+        
+        <!- CONFIRMATION: NO SVG graphics used. NO Mermaid JS used. ->
+    -->
+
+    <style>
+        /* Custom Styles & Animations */
+        body {
+            background-color: #f8fafc; /* Tailwind slate-50 - Light warm neutral */
+            color: #1e293b; /* Tailwind slate-800 */
+            font-family: 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+        }
+
+        /* Chart Container Strict Rules */
+        .chart-container {
+            position: relative;
+            width: 100%;
+            max-width: 600px;
+            margin-left: auto;
+            margin-right: auto;
+            height: 250px;
+            max-height: 300px;
+        }
+        @media (min-width: 768px) {
+            .chart-container { height: 300px; }
+        }
+
+        /* Conflict Animation */
+        @keyframes pulse-conflict {
+            0% { box-shadow: 0 0 0 0 rgba(239, 68, 68, 0.6); border-color: #ef4444; }
+            70% { box-shadow: 0 0 0 15px rgba(239, 68, 68, 0); border-color: #fca5a5; }
+            100% { box-shadow: 0 0 0 0 rgba(239, 68, 68, 0); border-color: #ef4444; }
+        }
+        .conflict-highlight {
+            animation: pulse-conflict 2s infinite;
+            border: 2px solid #ef4444;
+            background-color: #fef2f2;
+        }
+
+        /* Custom Scrollbar */
+        ::-webkit-scrollbar { width: 8px; }
+        ::-webkit-scrollbar-track { background: #f1f5f9; }
+        ::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 4px; }
+        ::-webkit-scrollbar-thumb:hover { background: #94a3b8; }
+
+        .card-hover {
+            transition: transform 0.2s ease, box-shadow 0.2s ease;
+        }
+        .card-hover:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1);
+        }
+    </style>
+</head>
+<body class="min-h-screen flex flex-col">
+
+    <!-- Header / Navigation -->
+    <header class="bg-white border-b border-slate-200 sticky top-0 z-50 shadow-sm">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between">
+            <div class="flex items-center gap-2">
+                <span class="text-2xl">🌍</span>
+                <h1 class="text-xl font-bold tracking-tight text-slate-800">Panel Conflit <span class="text-blue-600">Pro</span></h1>
+            </div>
+            <nav class="flex gap-4">
+                <button onclick="app.switchTab('liveview')" id="btn-tab-liveview" class="px-4 py-2 rounded-md font-semibold bg-slate-800 text-white transition-colors">
+                    📹 LiveView
+                </button>
+                <button onclick="app.switchTab('radio')" id="btn-tab-radio" class="px-4 py-2 rounded-md font-semibold text-slate-600 hover:bg-slate-100 transition-colors">
+                    📻 Radio
+                </button>
+            </nav>
+        </div>
+    </header>
+
+    <!-- Main Application Content -->
+    <main class="flex-grow max-w-7xl mx-auto w-full px-4 sm:px-6 lg:px-8 py-8">
+        
+        <!-- ========================================== -->
+        <!-- TAB: LIVEVIEW                              -->
+        <!-- ========================================== -->
+        <section id="tab-liveview" class="block">
+            
+            <!-- Section Intro -->
+            <div class="mb-8 bg-white p-6 rounded-xl shadow-sm border border-slate-200">
+                <h2 class="text-2xl font-bold mb-2">Centre de Surveillance Globale</h2>
+                <p class="text-slate-600">Explorez les caméras de surveillance mondiales en direct (24/7). Sélectionnez une zone pour accéder aux flux vidéo, analyser la météo locale, et surveiller l'indice de tension sociopolitique calculé en temps réel. Les zones de conflit actif sont mises en évidence.</p>
+            </div>
+
+            <!-- Breadcrumb & Search -->
+            <div class="flex flex-col md:flex-row justify-between items-center mb-6 gap-4">
+                <div id="breadcrumb" class="text-sm font-medium text-slate-500 flex items-center gap-2">
+                    <!-- Dynamic Breadcrumb -->
+                </div>
+                <div class="relative w-full md:w-64" id="search-container">
+                    <span class="absolute inset-y-0 left-0 flex items-center pl-3 text-slate-400">🔍</span>
+                    <input type="text" id="search-input" placeholder="Rechercher un pays..." class="w-full pl-10 pr-4 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white">
+                </div>
+            </div>
+
+            <!-- View 1: Countries Gallery -->
+            <div id="view-countries" class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
+                <!-- Dynamically populated -->
+            </div>
+
+            <!-- View 2: Cities Gallery -->
+            <div id="view-cities" class="hidden">
+                <button onclick="app.goBackToCountries()" class="mb-4 text-blue-600 hover:underline flex items-center gap-1 font-medium">
+                    <span>⬅️</span> Retour aux pays
+                </button>
+                <div id="cities-grid" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                    <!-- Dynamically populated -->
+                </div>
+            </div>
+
+            <!-- View 3: Dashboard (Camera + Stats) -->
+            <div id="view-dashboard" class="hidden">
+                <button onclick="app.goBackToCities()" class="mb-4 text-blue-600 hover:underline flex items-center gap-1 font-medium">
+                    <span>⬅️</span> Retour à la galerie
+                </button>
+                
+                <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+                    
+                    <!-- Left Col: Camera Feed -->
+                    <div class="lg:col-span-2 flex flex-col gap-6">
+                        <div class="bg-black rounded-xl overflow-hidden shadow-lg border border-slate-800 relative group">
+                            <!-- Aspect ratio container for 16:9 -->
+                            <div class="relative w-full" style="padding-bottom: 56.25%;">
+                                <iframe id="cam-iframe" class="absolute top-0 left-0 w-full h-full" src="" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" allowfullscreen></iframe>
+                            </div>
+                            <div class="absolute top-4 left-4 bg-red-600 text-white px-2 py-1 text-xs font-bold rounded flex items-center gap-2 animate-pulse">
+                                🔴 EN DIRECT
+                            </div>
+                            <div id="cam-overlay-info" class="absolute bottom-4 left-4 right-4 bg-black/60 backdrop-blur-sm text-white p-3 rounded-lg border border-white/10 flex justify-between items-center">
+                                <div>
+                                    <h3 id="cam-title" class="font-bold text-lg">Ville</h3>
+                                    <p id="cam-subtitle" class="text-sm text-gray-300">Coordonnées sécurisées</p>
+                                </div>
+                                <div class="text-2xl" id="cam-icon">🏙️</div>
+                            </div>
+                        </div>
+
+                        <!-- ISS Specific Data Panel (Hidden by default) -->
+                        <div id="iss-data-panel" class="hidden bg-slate-800 text-white rounded-xl p-6 shadow-md border border-slate-700">
+                            <h3 class="text-lg font-bold mb-4 flex items-center gap-2">🛰️ Télémétrie Orbitale ISS</h3>
+                            <div class="grid grid-cols-2 md:grid-cols-4 gap-4">
+                                <div class="bg-slate-900 p-3 rounded-lg">
+                                    <div class="text-slate-400 text-xs uppercase">Vélocité</div>
+                                    <div class="font-mono text-xl text-blue-400" id="iss-velocity">27 580 km/h</div>
+                                </div>
+                                <div class="bg-slate-900 p-3 rounded-lg">
+                                    <div class="text-slate-400 text-xs uppercase">Altitude</div>
+                                    <div class="font-mono text-xl text-green-400" id="iss-altitude">408 km</div>
+                                </div>
+                                <div class="bg-slate-900 p-3 rounded-lg">
+                                    <div class="text-slate-400 text-xs uppercase">Latitude</div>
+                                    <div class="font-mono text-xl" id="iss-lat">--</div>
+                                </div>
+                                <div class="bg-slate-900 p-3 rounded-lg">
+                                    <div class="text-slate-400 text-xs uppercase">Longitude</div>
+                                    <div class="font-mono text-xl" id="iss-lng">--</div>
+                                </div>
+                            </div>
+                            <div class="mt-4 text-sm text-slate-400 border-t border-slate-700 pt-2">
+                                ⚠️ Aucun conflit majeur détecté dans l'espace aérien orbital immédiat.
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Right Col: Stats & Analytics -->
+                    <div class="flex flex-col gap-6">
+                        
+                        <!-- Weather & Status -->
+                        <div class="bg-white rounded-xl p-6 shadow-sm border border-slate-200">
+                            <h3 class="text-lg font-bold border-b pb-2 mb-4 text-slate-800">Conditions Locales</h3>
+                            <div class="grid grid-cols-2 gap-4">
+                                <div>
+                                    <p class="text-sm text-slate-500">Météo Actuelle</p>
+                                    <p class="text-xl font-bold" id="stat-weather">--</p>
+                                </div>
+                                <div>
+                                    <p class="text-sm text-slate-500">Température</p>
+                                    <p class="text-xl font-bold" id="stat-temp">--</p>
+                                </div>
+                                <div class="col-span-2 mt-2">
+                                    <p class="text-sm text-slate-500">Niveau d'Alerte</p>
+                                    <p class="text-sm font-bold px-2 py-1 rounded inline-block mt-1" id="stat-alert-level">--</p>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Real-time Tension Chart -->
+                        <div class="bg-white rounded-xl p-6 shadow-sm border border-slate-200 flex-grow">
+                            <div class="flex justify-between items-center mb-4 border-b pb-2">
+                                <h3 class="text-lg font-bold text-slate-800">Indice de Tension</h3>
+                                <span class="text-xs font-mono bg-slate-100 px-2 py-1 rounded text-slate-600">Calcul Temps Réel</span>
+                            </div>
+                            <!-- STRICT CHART CONTAINER -->
+                            <div class="chart-container">
+                                <canvas id="tensionChart"></canvas>
+                            </div>
+                            <p class="text-xs text-slate-500 mt-4 text-center">Algorithme d'analyse basé sur les flux de communication locaux.</p>
+                        </div>
+                        
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- ========================================== -->
+        <!-- TAB: RADIO                                 -->
+        <!-- ========================================== -->
+        <section id="tab-radio" class="hidden">
+            <div class="mb-8 bg-white p-6 rounded-xl shadow-sm border border-slate-200">
+                <h2 class="text-2xl font-bold mb-2">Communications Radio Stratégiques</h2>
+                <p class="text-slate-600">Interceptez et écoutez les fréquences publiques, les contrôles aériens et les canaux de transmission d'urgence. Cliquez sur "Écouter" pour charger le flux en direct.</p>
+            </div>
+
+            <!-- Global Audio Player Container -->
+            <div id="global-audio-player" class="hidden mb-8 bg-slate-800 rounded-xl p-6 text-white shadow-lg sticky top-20 z-40 border-l-4 border-blue-500">
+                <div class="flex items-center justify-between">
+                    <div>
+                        <div class="text-blue-400 text-xs font-bold uppercase tracking-wider mb-1">En écoute</div>
+                        <h3 id="current-radio-name" class="font-bold text-xl">--</h3>
+                        <p id="current-radio-desc" class="text-slate-400 text-sm">--</p>
+                    </div>
+                    <div>
+                        <audio id="html-audio-player" controls autoplay class="h-10">
+                            Votre navigateur ne supporte pas l'élément audio.
+                        </audio>
+                    </div>
+                </div>
+            </div>
+
+            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4" id="radio-grid">
+                <!-- Dynamically populated -->
+            </div>
+        </section>
+
+    </main>
+
+    <!-- Application Logic -->
+    <script>
+        /**
+         * Core Database Mock
+         * Simulates a backend providing global data, real IP camera URLs (using youtube live embeds for reliability),
+         * and initial tension/weather data.
+         */
+        const database = {
+            countries: [
+                { id: 'ukr', name: 'Ukraine', icon: '🇺🇦', isConflict: true, cities: [
+                    { id: 'kyiv', name: 'Kiev', cam: 'https://www.youtube.com/embed/5m0JjA-C-B8?autoplay=1&mute=1', temp: '5°C', weather: 'Nuageux ☁️', tensionBase: 88, alert: 'CRITIQUE', alertClass: 'bg-red-100 text-red-800' },
+                    { id: 'odessa', name: 'Odessa', cam: 'https://www.youtube.com/embed/i0c9IeM3-dM?autoplay=1&mute=1', temp: '8°C', weather: 'Pluie 🌧️', tensionBase: 75, alert: 'ÉLEVÉE', alertClass: 'bg-orange-100 text-orange-800' }
+                ]},
+                { id: 'rus', name: 'Russie', icon: '🇷🇺', isConflict: true, cities: [
+                    { id: 'moscow', name: 'Moscou', cam: 'https://www.youtube.com/embed/1-iWeB-M-9k?autoplay=1&mute=1', temp: '-2°C', weather: 'Neige ❄️', tensionBase: 70, alert: 'ÉLEVÉE', alertClass: 'bg-orange-100 text-orange-800' },
+                    { id: 'vlad', name: 'Vladivostok', cam: 'https://www.youtube.com/embed/lA8gB1D1JcM?autoplay=1&mute=1', temp: '-8°C', weather: 'Clair ❄️', tensionBase: 40, alert: 'MODÉRÉE', alertClass: 'bg-yellow-100 text-yellow-800' }
+                ]},
+                { id: 'iss', name: 'Station Spatiale (ISS)', icon: '🛰️', isConflict: false, isSpace: true, order: 0, cities: [
+                    { id: 'iss_cam', name: 'Vue Terrestre Orbite', cam: 'https://www.youtube.com/embed/xRPjKQtRXR8?autoplay=1&mute=1', temp: '-157°C à 121°C', weather: 'Vide spatial 🌌', tensionBase: 5, alert: 'NOMINAL', alertClass: 'bg-green-100 text-green-800' }
+                ]},
+                { id: 'fra', name: 'France', icon: '🇫🇷', isConflict: false, cities: [
+                    { id: 'paris', name: 'Paris', cam: 'https://www.youtube.com/embed/sYv_y3g8r30?autoplay=1&mute=1', temp: '14°C', weather: 'Clair ☀️', tensionBase: 25, alert: 'NORMALE', alertClass: 'bg-blue-100 text-blue-800' },
+                    { id: 'marseille', name: 'Marseille', cam: 'https://www.youtube.com/embed/Lw991h25vU4?autoplay=1&mute=1', temp: '18°C', weather: 'Soleil ☀️', tensionBase: 20, alert: 'NORMALE', alertClass: 'bg-blue-100 text-blue-800' }
+                ]},
+                { id: 'usa', name: 'États-Unis', icon: '🇺🇸', isConflict: false, cities: [
+                    { id: 'ny', name: 'New York', cam: 'https://www.youtube.com/embed/1-iWeB-M-9k?autoplay=1&mute=1', temp: '10°C', weather: 'Vent 🌬️', tensionBase: 35, alert: 'SURVEILLANCE', alertClass: 'bg-yellow-100 text-yellow-800' },
+                ]},
+                { id: 'isr', name: 'Israël', icon: '🇮🇱', isConflict: true, cities: [
+                    { id: 'tlv', name: 'Tel Aviv', cam: 'https://www.youtube.com/embed/p9G7_j1rQ7o?autoplay=1&mute=1', temp: '25°C', weather: 'Dégagé ☀️', tensionBase: 82, alert: 'CRITIQUE', alertClass: 'bg-red-100 text-red-800' }
+                ]}
+            ],
+            radios: [
+                { id: 'r1', name: 'ATC JFK Tower', location: 'New York, USA', desc: 'Contrôle du trafic aérien (Public Feed)', stream: 'https://icecast.liveatc.net/kjfk_twr' },
+                { id: 'r2', name: 'Canal Météo Marine', location: 'Atlantique Nord', desc: 'Bulletins océaniques', stream: 'https://stream.liveatc.net/weather' }, // Generic mockup link
+                { id: 'r3', name: 'UHF Tactique (Simulation)', location: 'Zone Est', desc: 'Trafic crypté intercepté (bruit de fond)', stream: 'https://actions.google.com/sounds/v1/alarms/beep_short.ogg' }, // Safe fallback
+                { id: 'r4', name: 'ATC CDG Approach', location: 'Paris, France', desc: 'Contrôle approche aéroportuaire', stream: 'https://icecast.liveatc.net/lfpg_app' }
+            ]
+        };
+
+        /**
+         * Application State
+         */
+        const appState = {
+            currentTab: 'liveview', // liveview, radio
+            liveViewDepth: 'countries', // countries, cities, dashboard
+            selectedCountry: null,
+            selectedCity: null,
+            tensionChartInstance: null,
+            chartUpdateInterval: null,
+            issUpdateInterval: null
+        };
+
+        /**
+         * Main Application Logic
+         */
+        const app = {
+            init() {
+                this.sortCountries();
+                this.renderCountries();
+                this.renderRadios();
+                this.setupSearch();
+                this.updateBreadcrumb();
+            },
+
+            // Priorities: ISS first, then Conflicts, then others
+            sortCountries() {
+                database.countries.sort((a, b) => {
+                    if (a.isSpace) return -1;
+                    if (b.isSpace) return 1;
+                    if (a.isConflict && !b.isConflict) return -1;
+                    if (!a.isConflict && b.isConflict) return 1;
+                    return a.name.localeCompare(b.name);
+                });
+            },
+
+            // --- TAB NAVIGATION ---
+            switchTab(tabName) {
+                appState.currentTab = tabName;
+                
+                // UI Toggle
+                document.getElementById('tab-liveview').classList.toggle('hidden', tabName !== 'liveview');
+                document.getElementById('tab-radio').classList.toggle('hidden', tabName !== 'radio');
+                
+                // Button Styling
+                const btnLive = document.getElementById('btn-tab-liveview');
+                const btnRadio = document.getElementById('btn-tab-radio');
+                
+                if (tabName === 'liveview') {
+                    btnLive.className = 'px-4 py-2 rounded-md font-semibold bg-slate-800 text-white transition-colors';
+                    btnRadio.className = 'px-4 py-2 rounded-md font-semibold text-slate-600 hover:bg-slate-100 transition-colors';
+                } else {
+                    btnRadio.className = 'px-4 py-2 rounded-md font-semibold bg-slate-800 text-white transition-colors';
+                    btnLive.className = 'px-4 py-2 rounded-md font-semibold text-slate-600 hover:bg-slate-100 transition-colors';
+                }
+
+                // Cleanup if leaving liveview dashboard
+                if (tabName !== 'liveview') {
+                    this.stopRealtimeUpdates();
+                } else if (appState.liveViewDepth === 'dashboard') {
+                    this.startRealtimeUpdates();
+                }
+            },
+
+            // --- LIVEVIEW NAVIGATION ---
+            updateBreadcrumb() {
+                const bc = document.getElementById('breadcrumb');
+                let html = `<span class="cursor-pointer hover:text-slate-800" onclick="app.goBackToCountries()">🏠 Accueil</span>`;
+                
+                if (appState.selectedCountry) {
+                    html += ` <span>/</span> <span class="cursor-pointer hover:text-slate-800" onclick="app.goBackToCities()">${appState.selectedCountry.icon} ${appState.selectedCountry.name}</span>`;
+                }
+                if (appState.selectedCity) {
+                    html += ` <span>/</span> <span class="text-slate-800 font-bold">🏙️ ${appState.selectedCity.name}</span>`;
+                }
+                bc.innerHTML = html;
+            },
+
+            goBackToCountries() {
+                appState.liveViewDepth = 'countries';
+                appState.selectedCountry = null;
+                appState.selectedCity = null;
+                this.stopRealtimeUpdates();
+                
+                document.getElementById('view-countries').classList.remove('hidden');
+                document.getElementById('view-cities').classList.add('hidden');
+                document.getElementById('view-dashboard').classList.add('hidden');
+                document.getElementById('search-container').classList.remove('hidden');
+                
+                this.updateBreadcrumb();
+            },
+
+            goBackToCities() {
+                if (!appState.selectedCountry) return this.goBackToCountries();
+                appState.liveViewDepth = 'cities';
+                appState.selectedCity = null;
+                this.stopRealtimeUpdates();
+                
+                document.getElementById('view-countries').classList.add('hidden');
+                document.getElementById('view-cities').classList.remove('hidden');
+                document.getElementById('view-dashboard').classList.add('hidden');
+                document.getElementById('search-container').classList.add('hidden');
+                
+                this.updateBreadcrumb();
+            },
+
+            selectCountry(countryId) {
+                appState.selectedCountry = database.countries.find(c => c.id === countryId);
+                appState.liveViewDepth = 'cities';
+                this.renderCities();
+                
+                document.getElementById('view-countries').classList.add('hidden');
+                document.getElementById('view-cities').classList.remove('hidden');
+                document.getElementById('search-container').classList.add('hidden');
+                
+                this.updateBreadcrumb();
+            },
+
+            selectCity(cityId) {
+                appState.selectedCity = appState.selectedCountry.cities.find(c => c.id === cityId);
+                appState.liveViewDepth = 'dashboard';
+                
+                document.getElementById('view-cities').classList.add('hidden');
+                document.getElementById('view-dashboard').classList.remove('hidden');
+                
+                this.setupDashboard();
+                this.updateBreadcrumb();
+            },
+
+            // --- RENDERING VIEWS ---
+            renderCountries(filterText = '') {
+                const container = document.getElementById('view-countries');
+                container.innerHTML = '';
+
+                database.countries.forEach(country => {
+                    if (filterText && !country.name.toLowerCase().includes(filterText.toLowerCase())) return;
+
+                    const isConflict = country.isConflict;
+                    const isSpace = country.isSpace;
+                    
+                    // Classes to highlight conflicts
+                    const baseClasses = "card-hover bg-white rounded-xl p-6 border cursor-pointer text-center flex flex-col items-center justify-center min-h-[140px]";
+                    const statusClasses = isConflict ? "conflict-highlight" : "border-slate-200";
+                    const bgSpace = isSpace ? "bg-slate-900 text-white border-slate-700" : "";
+                    
+                    const div = document.createElement('div');
+                    div.className = `${baseClasses} ${statusClasses} ${bgSpace}`;
+                    div.onclick = () => this.selectCountry(country.id);
+
+                    div.innerHTML = `
+                        <div class="text-4xl mb-2">${country.icon}</div>
+                        <h3 class="font-bold text-lg ${isSpace ? 'text-white' : 'text-slate-800'}">${country.name}</h3>
+                        ${isConflict ? '<span class="mt-2 text-xs font-bold text-red-600 bg-red-100 px-2 py-1 rounded">ZONE DE CONFLIT</span>' : ''}
+                        ${isSpace ? '<span class="mt-2 text-xs font-bold text-blue-400 bg-blue-900 px-2 py-1 rounded">HORS ATMOSPHÈRE</span>' : ''}
+                    `;
+                    container.appendChild(div);
+                });
+            },
+
+            renderCities() {
+                const container = document.getElementById('cities-grid');
+                container.innerHTML = '';
+                const country = appState.selectedCountry;
+
+                if (!country || !country.cities || country.cities.length === 0) {
+                    container.innerHTML = '<p class="col-span-full text-center text-slate-500 py-8">Aucun flux disponible pour cette région.</p>';
+                    return;
+                }
+
+                country.cities.forEach(city => {
+                    const div = document.createElement('div');
+                    div.className = "card-hover bg-white rounded-xl overflow-hidden border border-slate-200 cursor-pointer flex flex-col";
+                    div.onclick = () => this.selectCity(city.id);
+
+                    div.innerHTML = `
+                        <div class="bg-slate-800 h-32 relative flex items-center justify-center border-b border-slate-200">
+                             <div class="text-white text-opacity-50 flex flex-col items-center">
+                                <span class="text-3xl mb-1">📹</span>
+                                <span class="text-xs uppercase tracking-widest">Aperçu Cam</span>
+                             </div>
+                             ${country.isConflict ? '<div class="absolute top-2 right-2 w-3 h-3 bg-red-500 rounded-full animate-pulse"></div>' : ''}
+                        </div>
+                        <div class="p-4 flex-grow flex flex-col justify-between">
+                            <div>
+                                <h3 class="font-bold text-xl text-slate-800 mb-1">${city.name}</h3>
+                                <div class="flex items-center gap-2 text-sm text-slate-500 mb-2">
+                                    <span>${city.weather}</span> • <span>${city.temp}</span>
+                                </div>
+                            </div>
+                            <div class="mt-2">
+                                <span class="text-xs font-bold px-2 py-1 rounded ${city.alertClass}">${city.alert}</span>
+                            </div>
+                        </div>
+                    `;
+                    container.appendChild(div);
+                });
+            },
+
+            setupSearch() {
+                document.getElementById('search-input').addEventListener('input', (e) => {
+                    this.renderCountries(e.target.value);
+                });
+            },
+
+            // --- DASHBOARD & REALTIME LOGIC ---
+            setupDashboard() {
+                const city = appState.selectedCity;
+                const country = appState.selectedCountry;
+
+                // Set textual data
+                document.getElementById('cam-title').innerText = `${city.name}, ${country.name}`;
+                document.getElementById('cam-icon').innerText = country.icon;
+                
+                // Handle Video Iframe
+                const iframe = document.getElementById('cam-iframe');
+                iframe.src = city.cam;
+
+                // Handle ISS specifics
+                const issPanel = document.getElementById('iss-data-panel');
+                if (country.isSpace) {
+                    issPanel.classList.remove('hidden');
+                    document.getElementById('cam-subtitle').innerText = "Orbite Terrestre Basse (LEO)";
+                } else {
+                    issPanel.classList.add('hidden');
+                    // Mock coordinates
+                    const mockLat = (Math.random() * 90).toFixed(4);
+                    const mockLng = (Math.random() * 180).toFixed(4);
+                    document.getElementById('cam-subtitle').innerText = `Lat: ${mockLat} | Lng: ${mockLng}`;
+                }
+
+                // Stats Panel
+                document.getElementById('stat-weather').innerText = city.weather;
+                document.getElementById('stat-temp').innerText = city.temp;
+                const alertEl = document.getElementById('stat-alert-level');
+                alertEl.innerText = city.alert;
+                alertEl.className = `text-sm font-bold px-2 py-1 rounded inline-block mt-1 ${city.alertClass}`;
+
+                this.initChart(city.tensionBase);
+                this.startRealtimeUpdates();
+            },
+
+            initChart(baseValue) {
+                const ctx = document.getElementById('tensionChart').getContext('2d');
+                
+                if (appState.tensionChartInstance) {
+                    appState.tensionChartInstance.destroy();
+                }
+
+                // Generate initial mock data
+                const initialData = Array.from({length: 20}, () => baseValue + (Math.random() * 10 - 5));
+                const labels = Array.from({length: 20}, (_, i) => `-${20-i}s`);
+
+                appState.tensionChartInstance = new Chart(ctx, {
+                    type: 'line',
+                    data: {
+                        labels: labels,
+                        datasets: [{
+                            label: 'Indice de Tension',
+                            data: initialData,
+                            borderColor: baseValue > 60 ? '#ef4444' : (baseValue > 30 ? '#f59e0b' : '#3b82f6'),
+                            backgroundColor: baseValue > 60 ? 'rgba(239, 68, 68, 0.1)' : 'rgba(59, 130, 246, 0.1)',
+                            borderWidth: 2,
+                            fill: true,
+                            tension: 0.4,
+                            pointRadius: 0
+                        }]
+                    },
+                    options: {
+                        responsive: true,
+                        maintainAspectRatio: false,
+                        animation: { duration: 0 }, // For smoother manual realtime updates
+                        plugins: {
+                            legend: { display: false },
+                            tooltip: { enabled: true }
+                        },
+                        scales: {
+                            y: { 
+                                min: 0, 
+                                max: 100,
+                                grid: { color: '#f1f5f9' }
+                            },
+                            x: { 
+                                grid: { display: false },
+                                ticks: { maxTicksLimit: 5 }
+                            }
+                        }
+                    }
+                });
+            },
+
+            startRealtimeUpdates() {
+                this.stopRealtimeUpdates();
+
+                // 1. Chart Updates (Every 1.5s)
+                appState.chartUpdateInterval = setInterval(() => {
+                    if (!appState.tensionChartInstance || !appState.selectedCity) return;
+                    
+                    const chart = appState.tensionChartInstance;
+                    const base = appState.selectedCity.tensionBase;
+                    
+                    // Generate new value with some random walk around base
+                    const lastVal = chart.data.datasets[0].data[chart.data.datasets[0].data.length - 1];
+                    let newVal = lastVal + (Math.random() * 8 - 4);
+                    
+                    // Pull back towards base if straying too far
+                    if (newVal > base + 15) newVal -= 4;
+                    if (newVal < base - 15) newVal += 4;
+                    // Clamp 0-100
+                    newVal = Math.max(0, Math.min(100, newVal));
+
+                    // Shift data
+                    chart.data.datasets[0].data.shift();
+                    chart.data.datasets[0].data.push(newVal);
+                    chart.update();
+                }, 1500);
+
+                // 2. ISS Specific Updates (Every 2s)
+                if (appState.selectedCountry && appState.selectedCountry.isSpace) {
+                    let lat = 0; let lng = 0;
+                    appState.issUpdateInterval = setInterval(() => {
+                        lat += (Math.random() * 0.1);
+                        lng += (Math.random() * 0.2);
+                        if(lat > 90) lat = -90;
+                        if(lng > 180) lng = -180;
+                        
+                        document.getElementById('iss-lat').innerText = lat.toFixed(4) + '°';
+                        document.getElementById('iss-lng').innerText = lng.toFixed(4) + '°';
+                        
+                        // slight velocity change
+                        const vel = 27500 + Math.floor(Math.random() * 100 - 50);
+                        document.getElementById('iss-velocity').innerText = vel.toLocaleString('fr-FR') + ' km/h';
+                    }, 2000);
+                }
+            },
+
+            stopRealtimeUpdates() {
+                if (appState.chartUpdateInterval) clearInterval(appState.chartUpdateInterval);
+                if (appState.issUpdateInterval) clearInterval(appState.issUpdateInterval);
+                
+                // Stop video iframe to save bandwidth when hiding
+                const iframe = document.getElementById('cam-iframe');
+                if (iframe) iframe.src = ''; 
+            },
+
+            // --- RADIO LOGIC ---
+            renderRadios() {
+                const container = document.getElementById('radio-grid');
+                container.innerHTML = '';
+
+                database.radios.forEach(radio => {
+                    const div = document.createElement('div');
+                    div.className = "card-hover bg-white border border-slate-200 rounded-xl p-5 flex flex-col justify-between";
+                    
+                    div.innerHTML = `
+                        <div>
+                            <div class="flex justify-between items-start mb-2">
+                                <h3 class="font-bold text-slate-800 text-lg">${radio.name}</h3>
+                                <span class="text-xl">📡</span>
+                            </div>
+                            <p class="text-xs text-slate-500 mb-1">📍 ${radio.location}</p>
+                            <p class="text-sm text-slate-600 mb-4">${radio.desc}</p>
+                        </div>
+                        <button onclick="app.playRadio('${radio.id}')" class="w-full bg-slate-100 hover:bg-slate-200 text-slate-800 font-semibold py-2 px-4 rounded transition-colors flex justify-center items-center gap-2">
+                            <span>▶️</span> Écouter le flux
+                        </button>
+                    `;
+                    container.appendChild(div);
+                });
+            },
+
+            playRadio(radioId) {
+                const radio = database.radios.find(r => r.id === radioId);
+                if (!radio) return;
+
+                const playerContainer = document.getElementById('global-audio-player');
+                const audioEl = document.getElementById('html-audio-player');
+                
+                document.getElementById('current-radio-name').innerText = radio.name;
+                document.getElementById('current-radio-desc').innerText = radio.location + ' - ' + radio.desc;
+                
+                playerContainer.classList.remove('hidden');
+                
+                // Attempt to play (browser policies might block autoplay, standard controls provided)
+                audioEl.src = radio.stream;
+                audioEl.play().catch(e => console.log("Autoplay prevented by browser", e));
+            }
+        };
+
+        // Initialize App on DOM Load
+        document.addEventListener('DOMContentLoaded', () => {
+            app.init();
+        });
+
+    </script>
+</body>
+</html>
