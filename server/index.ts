@@ -14,13 +14,24 @@ const app = express();
 const httpServer = createServer(app);
 
 // ─── WebSocket server ────────────────────────────────────────────────────────
-const wss = new WebSocketServer({ server: httpServer, path: '/ws' });
+// Use noServer mode so we can manually route upgrades without blocking Vite HMR
+const wss = new WebSocketServer({ noServer: true });
 registerWss(wss);
 
 wss.on('connection', (ws) => {
   console.log('[ws] Client connected');
   ws.on('close', () => console.log('[ws] Client disconnected'));
   ws.on('error', (err) => console.error('[ws] Error:', err));
+});
+
+httpServer.on('upgrade', (request, socket, head) => {
+  const url = new URL(request.url ?? '/', `http://${request.headers.host}`);
+  if (url.pathname === '/ws') {
+    wss.handleUpgrade(request, socket, head, (ws) => {
+      wss.emit('connection', ws, request);
+    });
+  }
+  // Other paths (e.g. /vite-hmr) are left for Vite to handle
 });
 
 declare module "http" {

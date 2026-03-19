@@ -514,7 +514,11 @@ export function GlobeView({ focusCountryCode, focusLat, focusLng, onToggleBriefi
           arcAltitude="altitude"
 
           htmlElementsData={globeData.htmlElementsData}
-          htmlElement="html"
+          htmlElement={(d: any) => {
+            const el = document.createElement('div');
+            el.innerHTML = d.html;
+            return (el.firstElementChild as HTMLElement) || el;
+          }}
           htmlAltitude="altitude"
 
           atmosphereColor="#00F0FF"

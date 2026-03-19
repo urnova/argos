@@ -20,6 +20,7 @@ export default defineConfig({
       : []),
   ],
   resolve: {
+    dedupe: ["three"],
     alias: {
       "@": path.resolve(import.meta.dirname, "client", "src"),
       "@shared": path.resolve(import.meta.dirname, "shared"),
