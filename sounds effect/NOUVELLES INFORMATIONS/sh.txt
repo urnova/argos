@@ -1,0 +1,8 @@
+📁 NOUVELLES INFORMATIONS
+nouvelle_donnee.mp3
+SFX : Bip discret d'arrivée de message, son de notification léger.
+TTS : Nouvelle donnée.
+
+info_entrante.mp3
+SFX : Bip discret, légèrement différent.
+TTS : Information entrante.

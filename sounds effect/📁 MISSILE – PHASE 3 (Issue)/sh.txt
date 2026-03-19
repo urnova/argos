@@ -1,0 +1,12 @@
+📁 MISSILE – PHASE 3 (Issue)
+impact_confirme.mp3
+SFX : Alarme courte et coupée net, son sourd d'impact.
+TTS : Impact confirmé.
+
+missile_intercepte.mp3
+SFX : Signal de fin d'alerte, deux bips descendants, apaisants.
+TTS : Missile intercepté. Menace neutralisée.
+
+missile_perdu.mp3
+SFX : Bip long et grave, tonalité descendante jusqu'au silence.
+TTS : Missile perdu.

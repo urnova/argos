@@ -1,0 +1,8 @@
+📁 MISES À JOUR SYSTÈME
+maj_indicateurs.mp3
+SFX : Signal neutre de mise à jour, double pulsation légère.
+TTS : Mise à jour des indicateurs.
+
+donnees_actualisees.mp3
+SFX : Signal neutre, simple pulsation.
+TTS : Données actualisées.

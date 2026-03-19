@@ -1,0 +1,12 @@
+📁 ALERTES COMPLÉMENTAIRES
+fausse_alerte.mp3
+SFX : Signal d'erreur, tonalité de débranchement.
+TTS : Erreur de détection. Fausse alerte.
+
+lancements_multiples.mp3
+SFX : Alarme plus rapide, bips rapprochés.
+TTS : Lancements multiples détectés. Calcul en cours.
+
+correction_trajectoire.mp3
+SFX : Bip d'alerte secondaire, tonalité de recalcul.
+TTS : Correction de trajectoire. Nouveau cap calculé.

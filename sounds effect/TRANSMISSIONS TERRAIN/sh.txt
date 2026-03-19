@@ -1,0 +1,8 @@
+📁 TRANSMISSIONS TERRAIN
+transmission_terrain.mp3
+SFX : Son de connexion radio sécurisée, courte interférence puis tonalité d'établissement de liaison.
+TTS : Transmission terrain reçue.
+
+message_operateur.mp3
+SFX : Son de connexion, plus court, type "bip" de réception.
+TTS : Message opérateur entrant.

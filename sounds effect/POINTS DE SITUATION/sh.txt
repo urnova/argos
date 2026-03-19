@@ -1,0 +1,8 @@
+📁 POINTS DE SITUATION
+point_situation_stable.mp3
+SFX : Double bip préparatoire, tonalité calme.
+TTS : Point de situation. Niveaux stables.
+
+point_situation_evolution.mp3
+SFX : Double bip préparatoire, légèrement plus marqué.
+TTS : Point de situation. Évolution détectée.

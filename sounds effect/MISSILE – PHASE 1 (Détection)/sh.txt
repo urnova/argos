@@ -1,0 +1,12 @@
+📁 MISSILE – PHASE 1 (Détection)
+tir_missile_detecte.mp3
+SFX : Signal grave ascendant, type détection radar, avec une résonance métallique.
+TTS : Tir missile détecté. Calcul de la trajectoire.
+
+lancement_detecte_partiel.mp3
+SFX : Signal radar, tonalité répétitive courte.
+TTS : Lancement détecté. Destination inconnue.
+
+alerte_missile_identification.mp3
+SFX : Signal radar, légèrement plus urgent.
+TTS : Alerte missile. Sources en cours d'identification.

@@ -1,0 +1,24 @@
+📁 VÉRIFICATIONS
+verification_en_cours.mp3
+SFX : Bip court d'entrée de donnée, électronique, propre, résonnant légèrement dans une salle de contrôle.
+TTS : Vérification en cours. (voix robotique masculine, calme, articulée)
+
+recoupement_sources.mp3
+SFX : Signal de traitement informatique, pulsation douce, ambiance de serveurs.
+TTS : Recoupement des sources.
+
+source_confirmee.mp3
+SFX : Double bip de confirmation, tonalité ascendante, satisfaisant.
+TTS : Source confirmée.
+
+source_non_fiable.mp3
+SFX : Bip grave, tonalité descendante, signal d'erreur discret.
+TTS : Source non fiable. Rejetée.
+
+verification_terminee_fiable.mp3
+SFX : Double bip, tonalité neutre, fin de processus.
+TTS : Vérification terminée. Fiable.
+
+info_non_verifiee.mp3
+SFX : Bip grave et court, indiquant un rejet.
+TTS : Information non vérifiée. Écartée.

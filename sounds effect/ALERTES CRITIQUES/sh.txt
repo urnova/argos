@@ -1,0 +1,8 @@
+📁 ALERTES CRITIQUES
+alerte_critique.mp3
+SFX : Alarme grave, unique, pulsation lente, résonance de bunker.
+TTS : Alerte critique.
+
+seuil_alerte_atteint.mp3
+SFX : Alarme grave, unique, similaire mais légèrement plus aiguë.
+TTS : Seuil d'alerte atteint.

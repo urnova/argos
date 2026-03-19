@@ -1,0 +1,4 @@
+📁 BREAKING NEWS
+flash_special.mp3
+SFX : Signal spécifique, son de flash d'information, trois notes rapides.
+TTS : Flash spécial. Information majeure.
